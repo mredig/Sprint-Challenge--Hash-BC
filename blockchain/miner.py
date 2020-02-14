@@ -10,7 +10,7 @@ from timeit import default_timer as timer
 import random
 
 
-def proof_of_work(last_proof):
+def proof_of_work(last_proof, iterations):
     """
     Multi-Ouroboros of Work Algorithm
     - Find a number p' such that the last six digits of hash(p) are equal
@@ -20,14 +20,20 @@ def proof_of_work(last_proof):
     - Use the same method to generate SHA-256 hashes as the examples in class
     """
 
-    start = timer()
-
-    print("Searching for next proof")
+    # start = timer()
+    # print("Searching for next proof")
     proof = 0
-    #  TODO: Your code here
 
-    print("Proof found: " + str(proof) + " in " + str(timer() - start))
-    return proof
+    last_proof = f"{last_proof}"
+    lastHex = hashlib.sha256(last_proof.encode()).hexdigest()
+    
+    for i in range(iterations):
+        proof = str(int(random.random() * 100000000))
+        if valid_proof(lastHex, proof):
+            return proof
+
+    # print("Proof found: " + str(proof) + " in " + str(timer() - start))
+    return None
 
 
 def valid_proof(last_hash, proof):
@@ -38,10 +44,39 @@ def valid_proof(last_hash, proof):
 
     IE:  last_hash: ...AE9123456, new hash 123456E88...
     """
+    lastSix = last_hash[-6:]
+    newHash = hashlib.sha256(proof.encode()).hexdigest()
+    return lastSix == newHash[:6]
 
-    # TODO: Your code here!
-    pass
 
+def getLastProof():
+    r = requests.get(url=node + "/last_proof")
+    # Handle non-json response
+    try:
+        data = r.json()
+    except ValueError:
+        print("Error:  Non-json response")
+        print("Response returned:")
+        print(r)
+        return None
+
+    return data.get("proof", None)
+
+
+def submitProof(new_proof):
+    # When found, POST it to the server {"proof": new_proof, "id": id}
+    post_data = {"proof": new_proof,
+                 "id": id}
+
+    r = requests.post(url=node + "/mine", json=post_data)
+    try:
+        data = r.json()
+    except ValueError:
+        print("Error:  Non-json response")
+        print("Response returned:")
+        print(r)
+    status = data.get("message", None)
+    return status
 
 if __name__ == '__main__':
     # What node are we interacting with?
@@ -53,10 +88,15 @@ if __name__ == '__main__':
     coins_mined = 0
 
     # Load or create ID
-    f = open("my_id.txt", "r")
-    id = f.read()
+    # Load ID
+    if len(sys.argv) > 2:
+        id = sys.argv[2]
+    else:
+        f = open("my_id.txt", "r")
+        id = f.read()
+        f.close()
+
     print("ID is", id)
-    f.close()
 
     if id == 'NONAME\n':
         print("ERROR: You must change your name in `my_id.txt`!")
@@ -64,17 +104,25 @@ if __name__ == '__main__':
     # Run forever until interrupted
     while True:
         # Get the last proof from the server
-        r = requests.get(url=node + "/last_proof")
-        data = r.json()
-        new_proof = proof_of_work(data.get('proof'))
 
-        post_data = {"proof": new_proof,
-                     "id": id}
+        start = timer()
+        print("Searching for next proof")
 
-        r = requests.post(url=node + "/mine", json=post_data)
-        data = r.json()
-        if data.get('message') == 'New Block Forged':
+        new_proof = None
+        while new_proof is None:
+            oldProof = getLastProof()
+            if oldProof is None:
+                break
+            print(f"old proof {oldProof}")
+
+            new_proof = proof_of_work(oldProof, 1000000)
+
+        print("Proof found: " + str(new_proof) + " in " + str(timer() - start))
+
+        success = submitProof(new_proof)
+
+        if success == 'New Block Forged':
             coins_mined += 1
             print("Total coins mined: " + str(coins_mined))
         else:
-            print(data.get('message'))
+            print(success)
