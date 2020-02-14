@@ -30,6 +30,7 @@ def proof_of_work(last_proof, iterations):
     for i in range(iterations):
         proof = str(int(random.random() * 100000000))
         if valid_proof(lastHex, proof):
+            print(f"found proof for {last_proof} - {proof}")
             return proof
 
     # print("Proof found: " + str(proof) + " in " + str(timer() - start))
@@ -71,11 +72,12 @@ def submitProof(new_proof):
     r = requests.post(url=node + "/mine", json=post_data)
     try:
         data = r.json()
+        status = data.get("message", None)
     except ValueError:
         print("Error:  Non-json response")
         print("Response returned:")
         print(r)
-    status = data.get("message", None)
+        status = str(r)
     return status
 
 if __name__ == '__main__':
@@ -116,6 +118,9 @@ if __name__ == '__main__':
             print(f"old proof {oldProof}")
 
             new_proof = proof_of_work(oldProof, 1000000)
+        if new_proof is None:
+            print("none proof")
+            break
 
         print("Proof found: " + str(new_proof) + " in " + str(timer() - start))
 
