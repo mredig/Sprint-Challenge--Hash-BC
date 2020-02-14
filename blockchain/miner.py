@@ -115,13 +115,13 @@ if __name__ == '__main__':
         while new_proof is None:
             oldProof = getLastProof()
             if oldProof is None:
-                break
+                continue
             print(f"old proof {oldProof}")
 
             new_proof = proof_of_work(oldProof, 1000000)
         if new_proof is None:
             print("none proof")
-            break
+            continue
 
         print("Proof found: " + str(new_proof) + " in " + str(timer() - start))
 
