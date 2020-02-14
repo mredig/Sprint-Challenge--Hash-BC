@@ -14,7 +14,7 @@ class Ticket:
 
 def reconstruct_trip(tickets, length):
     hashtable = HashTable(length)
-    route = [None] * length
+    route = [None] * (length - 1)
 
     firstTicket = None
     for ticket in tickets:
@@ -22,9 +22,10 @@ def reconstruct_trip(tickets, length):
         if ticket.source == "NONE":
             firstTicket = ticket
     
-    orderedTickets = []
+    counter = 0
     while firstTicket.destination != "NONE":
-        orderedTickets.append(firstTicket.destination)
+        route[counter] = firstTicket.destination
+        counter += 1
         firstTicket = hash_table_retrieve(hashtable, firstTicket.destination)
 
-    return orderedTickets
+    return route
