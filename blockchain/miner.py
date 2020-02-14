@@ -53,10 +53,11 @@ def valid_proof(last_hash, proof):
 def getLastProof():
     r = requests.get(url=node + "/last_proof")
     # Handle non-json response
+    data = {}
     try:
         data = r.json()
     except ValueError:
-        print("Error:  Non-json response")
+        print("Error:  Non-json response (via last_proof)")
         print("Response returned:")
         print(r)
         return None
@@ -74,7 +75,7 @@ def submitProof(new_proof):
         data = r.json()
         status = data.get("message", None)
     except ValueError:
-        print("Error:  Non-json response")
+        print("Error:  Non-json response (via submission)")
         print("Response returned:")
         print(r)
         status = str(r)
